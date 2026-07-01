@@ -155,7 +155,10 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
   <div class="card-panel" id="cardPanel">
     <div class="card-panel-head">
       <h3>Cartão de crédito</h3>
-      <button id="editLimitBtn">editar limite</button>
+      <div>
+        <button id="editClosingBtn" style="margin-right:6px">fechamento</button>
+        <button id="editLimitBtn">editar limite</button>
+      </div>
     </div>
     <div class="cp-bar-bg"><div class="cp-bar-fill" id="cpBarFill" style="width:0%"></div></div>
     <div class="cp-pct" id="cpPct"></div>
@@ -276,7 +279,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
   var FATURA_CAT = 'Fatura cartão';
   var SYNC_SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
   var sync = { clientId:'', tokenClient:null, accessToken:null, spreadsheetId:null, sheetTitle:'Sheet1', fileName:'livro-caixa-dados', timer:null };
-  var state = { tx: [], cats: DEFAULT_CATS.slice(), recurring: [], accounts: [], cardLimit: 0, curMonth: new Date().toISOString().slice(0,7), tab: 'mes', editingId: null, loaded:false };
+  var state = { tx: [], cats: DEFAULT_CATS.slice(), recurring: [], accounts: [], cardLimit: 0, cardClosingDay: 29, curMonth: new Date().toISOString().slice(0,7), tab: 'mes', editingId: null, loaded:false };
 
   function fmtBRL(n){
     var neg = n < 0;
@@ -290,11 +293,17 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
   function uid(){ return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
   function pad2(n){ return n < 10 ? '0'+n : ''+n; }
   function daysInMonth(y,m){ return new Date(y, m, 0).getDate(); }
+  function invoiceMonthFor(dateStr){
+    var d = new Date(dateStr + 'T00:00:00');
+    if(d.getDate() > (state.cardClosingDay || 29)) d.setMonth(d.getMonth() + 1);
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1);
+  }
 
   function load(){
     try{ var t = localStorage.getItem('fin-transactions'); state.tx = t ? JSON.parse(t) : []; }catch(e){ state.tx = []; }
     try{ var c = localStorage.getItem('fin-categories'); state.cats = c ? JSON.parse(c) : DEFAULT_CATS.slice(); }catch(e){ state.cats = DEFAULT_CATS.slice(); }
     try{ var l = localStorage.getItem('fin-card-limit'); state.cardLimit = l ? parseFloat(l) : 0; }catch(e){ state.cardLimit = 0; }
+    try{ var cd = localStorage.getItem('fin-card-closing-day'); state.cardClosingDay = cd ? parseInt(cd,10) : 29; }catch(e){ state.cardClosingDay = 29; }
     try{ var r = localStorage.getItem('fin-recurring'); state.recurring = r ? JSON.parse(r) : []; }catch(e){ state.recurring = []; }
     try{ var a = localStorage.getItem('fin-accounts'); state.accounts = a ? JSON.parse(a) : DEFAULT_ACCTS.slice(); }catch(e){ state.accounts = DEFAULT_ACCTS.slice(); }
     if(state.accounts.length === 0) state.accounts = DEFAULT_ACCTS.slice();
@@ -317,6 +326,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
   function saveTx(){ try{ localStorage.setItem('fin-transactions', JSON.stringify(state.tx)); }catch(e){} scheduleSync(); }
   function saveCats(){ try{ localStorage.setItem('fin-categories', JSON.stringify(state.cats)); }catch(e){} scheduleSync(); }
   function saveLimit(){ try{ localStorage.setItem('fin-card-limit', String(state.cardLimit)); }catch(e){} scheduleSync(); }
+  function saveClosingDay(){ try{ localStorage.setItem('fin-card-closing-day', String(state.cardClosingDay)); }catch(e){} scheduleSync(); }
   function saveRecurring(){ try{ localStorage.setItem('fin-recurring', JSON.stringify(state.recurring)); }catch(e){} scheduleSync(); }
   function saveAccounts(){ try{ localStorage.setItem('fin-accounts', JSON.stringify(state.accounts)); }catch(e){} scheduleSync(); }
 
@@ -510,9 +520,9 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
     var fill = document.getElementById('cpBarFill');
     fill.style.width = pct + '%';
     fill.className = 'cp-bar-fill' + (limit>0 && used>limit ? ' over' : (pct>=80 ? ' warn' : ''));
-    document.getElementById('cpPct').textContent = limit>0
+    document.getElementById('cpPct').textContent = (limit>0
       ? (pct.toFixed(1)+'% do limite usado, de '+fmtBRL(limit)+' total')
-      : 'defina o limite total do cartao para acompanhar o uso';
+      : 'defina o limite total do cartao para acompanhar o uso') + ' · fatura fecha dia ' + (state.cardClosingDay||29);
     document.getElementById('cpUsed').textContent = fmtBRL(used);
     document.getElementById('cpAvail').textContent = fmtBRL(avail);
     document.getElementById('cpInvoice').textContent = fmtBRL(invoice);
@@ -581,7 +591,10 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
       var isPend = t.status === 'pendente';
       var amtClass = t.type==='receita' ? 'credit' : (isPend ? 'muted' : 'debit');
       var sign = t.type==='receita' ? '' : '-';
-      var tag = t.installmentInfo ? ' <span class="parcela-tag">('+t.installmentInfo+')</span>' : '';
+      var tagParts = [];
+      if(t.installmentInfo) tagParts.push(t.installmentInfo);
+      if(t.purchaseDate) tagParts.push('compra '+t.purchaseDate.split('-').reverse().join('/'));
+      var tag = tagParts.length ? ' <span class="parcela-tag">('+tagParts.join(' · ')+')</span>' : '';
       var groupBtn = t.groupId ? '<button data-delgroup="'+t.groupId+'">excluir compra</button>' : '';
       var statusBadge = '<span class="badge st-'+(isPend?'pendente':'pago')+'">'+(isPend?'Pendente':'Pago')+'</span>';
       var toggleBtn = t.type !== 'receita' ? '<button class="'+(isPend?'pay':'')+'" data-toggle="'+t.id+'">'+(isPend?'marcar pago':'marcar pendente')+'</button>' : '';
@@ -880,6 +893,13 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
     renderAll();
   });
 
+  document.getElementById('editClosingBtn').addEventListener('click', function(){
+    var v = prompt('Dia do fechamento da fatura (compras depois desse dia caem no mes seguinte):', state.cardClosingDay || 29);
+    if(v === null) return;
+    var n = parseInt(v, 10);
+    if(!isNaN(n) && n >= 1 && n <= 31){ state.cardClosingDay = n; saveClosingDay(); renderCardPanel(); }
+  });
+
   document.getElementById('editLimitBtn').addEventListener('click', function(){
     var v = prompt('Limite total do cartao (R$):', state.cardLimit || '');
     if(v === null) return;
@@ -921,6 +941,9 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
     if(acctVal === '__new__') return;
     var parcelas = type === 'cartao' ? (parseInt(document.getElementById('f-parcelas').value, 10) || 1) : 1;
 
+    var isCartao = type === 'cartao';
+    var baseInvoiceMonth = isCartao ? invoiceMonthFor(baseDate) : null;
+
     if(parcelas > 1){
       var groupId = uid();
       var per = Math.round((amount / parcelas) * 100) / 100;
@@ -928,13 +951,21 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
       for(var i = 0; i < parcelas; i++){
         var val = (i === parcelas - 1) ? Math.round((amount - acumulado) * 100) / 100 : per;
         acumulado += val;
-        var d = new Date(baseDate + 'T00:00:00');
-        d.setMonth(d.getMonth() + i);
-        var dstr = d.toISOString().slice(0,10);
-        state.tx.push({ id: uid(), date: dstr, desc: desc, category: cat, type: type, amount: val, status: 'pago', groupId: groupId, installmentInfo: (i+1)+'/'+parcelas });
+        var dstr;
+        if(isCartao){
+          var parts = baseInvoiceMonth.split('-'); var iy = parseInt(parts[0],10), im = parseInt(parts[1],10) - 1 + i;
+          var dt = new Date(iy, im, 1);
+          dstr = dt.getFullYear() + '-' + pad2(dt.getMonth()+1) + '-01';
+        } else {
+          var d = new Date(baseDate + 'T00:00:00');
+          d.setMonth(d.getMonth() + i);
+          dstr = d.toISOString().slice(0,10);
+        }
+        state.tx.push({ id: uid(), date: dstr, purchaseDate: isCartao ? baseDate : undefined, desc: desc, category: cat, type: type, amount: val, status: 'pago', groupId: groupId, installmentInfo: (i+1)+'/'+parcelas });
       }
     } else {
-      state.tx.push({ id: uid(), date: baseDate, desc: desc, category: cat, type: type, account: type==='cartao' ? undefined : acctVal, amount: amount, status: 'pago' });
+      var singleDate = isCartao ? (baseInvoiceMonth + '-01') : baseDate;
+      state.tx.push({ id: uid(), date: singleDate, purchaseDate: isCartao ? baseDate : undefined, desc: desc, category: cat, type: type, account: isCartao ? undefined : acctVal, amount: amount, status: 'pago' });
     }
     saveTx();
     document.getElementById('f-desc').value = '';
