@@ -74,7 +74,7 @@ body{margin:0;background:#FDFDF9;padding:12px;}
 .add-form button{background:var(--ink);color:var(--paper);border:none;border-radius:4px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500;}
 .add-form button:hover{opacity:.85;}
 .ledger-wrap{display:flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;overflow-x:auto;}
-.ledger-wrap table{flex-shrink:0;min-width:100%;}
+.ledger-wrap table{flex-shrink:0;flex-grow:1;}
 .rail{width:20px;background:var(--card);border-right:1px solid var(--rule);display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:14px 0;flex-shrink:0;}
 .rail span{width:8px;height:8px;border-radius:50%;background:var(--paper);border:1px solid var(--rule);}
 table.tx{width:100%;border-collapse:collapse;font-size:13px;}
@@ -105,13 +105,13 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
 .amt.debit{color:var(--debit);}
 .amt.muted{color:var(--ink-soft);}
 .row-actions{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:nowrap;white-space:nowrap;}
-.row-actions button{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:12px;text-decoration:underline;padding:0;display:inline-flex;align-items:center;}
+.row-actions button{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:12px;text-decoration:underline;padding:0;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0;}
 .row-actions button svg{display:block;}
 .row-actions button:hover{color:var(--ink);}
-.row-actions button.pay{color:var(--credit);font-weight:600;}
-.pay-check{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--ink-soft);cursor:pointer;text-transform:uppercase;letter-spacing:.3px;}
+.row-actions button.text-btn{width:auto;height:auto;padding:0;}
+.pay-check{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0;cursor:pointer;}
 .pay-check input{width:13px;height:13px;cursor:pointer;margin:0;}
-.pay-check-spacer{display:inline-block;width:13px;height:13px;}
+.pay-check-spacer{display:inline-block;width:18px;height:18px;flex-shrink:0;}
 .empty{padding:30px 10px;text-align:center;color:var(--ink-soft);font-style:italic;font-family:'Source Serif 4',serif;}
 .cat-breakdown{margin-top:20px;}
 .cat-breakdown h3{font-size:13px;margin-bottom:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;}
@@ -603,7 +603,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
       if(t.installmentInfo) tagParts.push(t.installmentInfo);
       if(t.purchaseDate) tagParts.push('compra '+t.purchaseDate.split('-').reverse().join('/'));
       var tag = tagParts.length ? ' <span class="parcela-tag">('+tagParts.join(' · ')+')</span>' : '';
-      var groupBtn = t.groupId ? '<button data-delgroup="'+t.groupId+'">excluir compra</button>' : '';
+      var groupBtn = t.groupId ? '<button class="text-btn" data-delgroup="'+t.groupId+'">excluir compra</button>' : '';
       var statusBadge = '<span class="badge st-'+(isPend?'pendente':'pago')+'">'+(isPend?'Pendente':'Pago')+'</span>';
       var toggleBtn = t.type !== 'receita' ? '<label class="pay-check" title="pago"><input type="checkbox" data-toggle="'+t.id+'"'+(isPend?'':' checked')+'></label>' : '<span class="pay-check-spacer"></span>';
       var acctCell = t.type==='cartao' ? '<span class="acct-tag">-</span>' : '<span class="acct-tag">'+(acctName(t.account)||'-')+'</span>';
