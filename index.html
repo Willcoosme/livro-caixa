@@ -612,7 +612,6 @@ table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:m
       if(t.installmentInfo) tagParts.push(t.installmentInfo);
       if(t.purchaseDate) tagParts.push('compra '+t.purchaseDate.split('-').reverse().join('/'));
       var tag = tagParts.length ? ' <span class="parcela-tag">('+tagParts.join(' · ')+')</span>' : '';
-      var groupBtn = t.groupId ? '<button class="text-btn" data-delgroup="'+t.groupId+'">excluir compra</button>' : '';
       var statusBadge = '<span class="badge st-'+(isPend?'pendente':'pago')+'">'+(isPend?'Pendente':'Pago')+'</span>';
       var toggleBtn = t.type !== 'receita' ? '<label class="pay-check" title="pago"><input type="checkbox" data-toggle="'+t.id+'"'+(isPend?'':' checked')+'></label>' : '<span class="pay-check-spacer"></span>';
       var acctCell = t.type==='cartao' ? '<span class="acct-tag">-</span>' : '<span class="acct-tag">'+(acctName(t.account)||'-')+'</span>';
@@ -625,7 +624,7 @@ table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:m
         '<div class="col-hide-mobile">'+acctCell+'</div>'+
         '<div class="col-hide-mobile">'+statusBadge+'</div>'+
         '<div class="amt '+amtClass+'">'+sign+fmtBRL(t.amount)+'</div>'+
-        '<div class="row-actions">'+toggleBtn+'<button data-edit="'+t.id+'" title="editar">'+ICON_EDIT+'</button><button data-del="'+t.id+'" title="excluir">'+ICON_DEL+'</button>'+groupBtn+'</div>'+
+        '<div class="row-actions">'+toggleBtn+'<button data-edit="'+t.id+'" title="editar">'+ICON_EDIT+'</button><button data-del="'+t.id+'" title="excluir">'+ICON_DEL+'</button></div>'+
       '</div>';
     }).join('');
 
@@ -643,15 +642,20 @@ table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:m
     Array.prototype.forEach.call(body.querySelectorAll('[data-del]'), function(b){
       b.addEventListener('click', function(){
         var id = b.getAttribute('data-del');
+        var tx = state.tx.find(function(t){ return t.id === id; });
+        if(tx && tx.groupId){
+          if(confirm('Excluir apenas esta parcela ('+(tx.installmentInfo||'')+')?\n\nOK = so esta parcela\nCancelar = ver outra opcao')){
+            state.tx = state.tx.filter(function(t){ return t.id !== id; });
+            saveTx(); renderAll();
+            return;
+          }
+          if(confirm('Excluir a compra inteira, com todas as parcelas?')){
+            state.tx = state.tx.filter(function(t){ return t.groupId !== tx.groupId; });
+            saveTx(); renderAll();
+          }
+          return;
+        }
         state.tx = state.tx.filter(function(t){ return t.id !== id; });
-        saveTx(); renderAll();
-      });
-    });
-    Array.prototype.forEach.call(body.querySelectorAll('[data-delgroup]'), function(b){
-      b.addEventListener('click', function(){
-        var gid = b.getAttribute('data-delgroup');
-        if(!confirm('Excluir todas as parcelas dessa compra?')) return;
-        state.tx = state.tx.filter(function(t){ return t.groupId !== gid; });
         saveTx(); renderAll();
       });
     });
