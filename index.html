@@ -103,7 +103,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
 .amt.credit{color:var(--credit);}
 .amt.debit{color:var(--debit);}
 .amt.muted{color:var(--ink-soft);}
-.row-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
+.row-actions{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:nowrap;white-space:nowrap;}
 .row-actions button{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:12px;text-decoration:underline;padding:0;display:inline-flex;align-items:center;}
 .row-actions button svg{display:block;}
 .row-actions button:hover{color:var(--ink);}
@@ -603,7 +603,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
       var tag = tagParts.length ? ' <span class="parcela-tag">('+tagParts.join(' · ')+')</span>' : '';
       var groupBtn = t.groupId ? '<button data-delgroup="'+t.groupId+'">excluir compra</button>' : '';
       var statusBadge = '<span class="badge st-'+(isPend?'pendente':'pago')+'">'+(isPend?'Pendente':'Pago')+'</span>';
-      var toggleBtn = t.type !== 'receita' ? '<label class="pay-check"><input type="checkbox" data-toggle="'+t.id+'"'+(isPend?'':' checked')+'> pago</label>' : '';
+      var toggleBtn = t.type !== 'receita' ? '<label class="pay-check" title="pago"><input type="checkbox" data-toggle="'+t.id+'"'+(isPend?'':' checked')+'></label>' : '';
       var acctCell = t.type==='cartao' ? '<span class="acct-tag">-</span>' : '<span class="acct-tag">'+(acctName(t.account)||'-')+'</span>';
       var mobileMeta = '<div class="mobile-meta">'+t.category+' · '+(t.type==='cartao'?'':(acctName(t.account)||'-')+' · ')+(isPend?'Pendente':'Pago')+'</div>';
       return '<tr class="'+(isPend?'pendente':'')+'">'+
