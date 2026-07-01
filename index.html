@@ -261,7 +261,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
   var TYPE_LABEL = {receita:'Receita', cartao:'Cartao', conta:'Conta', debito:'Débito', fatura:'Fatura'};
   var FATURA_CAT = 'Fatura cartão';
   var SYNC_SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
-  var sync = { clientId:'', tokenClient:null, accessToken:null, spreadsheetId:null, fileName:'livro-caixa-dados', timer:null };
+  var sync = { clientId:'', tokenClient:null, accessToken:null, spreadsheetId:null, sheetTitle:'Sheet1', fileName:'livro-caixa-dados', timer:null };
   var state = { tx: [], cats: DEFAULT_CATS.slice(), recurring: [], accounts: [], cardLimit: 0, curMonth: new Date().toISOString().slice(0,7), tab: 'mes', editingId: null, loaded:false };
 
   function fmtBRL(n){
@@ -325,10 +325,22 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
 
   function driveHeaders(){ return { Authorization: 'Bearer ' + sync.accessToken }; }
 
+  function getSheetTitle(){
+    return fetch('https://sheets.googleapis.com/v4/spreadsheets/'+sync.spreadsheetId+'?fields=sheets.properties.title', {headers:driveHeaders()})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var title = data.sheets && data.sheets[0] && data.sheets[0].properties && data.sheets[0].properties.title;
+        sync.sheetTitle = title || 'Sheet1';
+      })
+      .catch(function(){ /* keep previous/default title */ });
+  }
+
+  function sheetRange(){ return encodeURIComponent(sync.sheetTitle) + '!A1'; }
+
   function ensureSpreadsheet(){
     if(sync.spreadsheetId){
       return fetch('https://www.googleapis.com/drive/v3/files/'+sync.spreadsheetId+'?fields=id', {headers:driveHeaders()})
-        .then(function(r){ if(r.ok) return true; return findOrCreateSheet(); })
+        .then(function(r){ if(r.ok) return getSheetTitle(); return findOrCreateSheet(); })
         .catch(findOrCreateSheet);
     }
     return findOrCreateSheet();
@@ -344,16 +356,17 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
         } else {
           return fetch('https://sheets.googleapis.com/v4/spreadsheets', {
             method:'POST', headers: Object.assign({'Content-Type':'application/json'}, driveHeaders()),
-            body: JSON.stringify({ properties:{ title: sync.fileName } })
-          }).then(function(r){ return r.json(); }).then(function(created){ sync.spreadsheetId = created.spreadsheetId; });
+            body: JSON.stringify({ properties:{ title: sync.fileName }, sheets:[{ properties:{ title:'Dados' } }] })
+          }).then(function(r){ return r.json(); }).then(function(created){ sync.spreadsheetId = created.spreadsheetId; sync.sheetTitle = 'Dados'; });
         }
       })
-      .then(function(){ try{ localStorage.setItem('fin-google-sheetid', sync.spreadsheetId); }catch(e){} });
+      .then(function(){ try{ localStorage.setItem('fin-google-sheetid', sync.spreadsheetId); }catch(e){} })
+      .then(function(){ return getSheetTitle(); });
   }
 
   function pullFromSheet(){
     if(!sync.spreadsheetId) return;
-    return fetch('https://sheets.googleapis.com/v4/spreadsheets/'+sync.spreadsheetId+'/values/Sheet1!A1', {headers:driveHeaders()})
+    return fetch('https://sheets.googleapis.com/v4/spreadsheets/'+sync.spreadsheetId+'/values/'+sheetRange(), {headers:driveHeaders()})
       .then(function(r){ return r.json(); })
       .then(function(data){
         var raw = data.values && data.values[0] && data.values[0][0];
@@ -384,7 +397,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
   function pushToSheet(){
     if(!sync.spreadsheetId || !sync.accessToken) return;
     var payload = { tx: state.tx, cats: state.cats, recurring: state.recurring, accounts: state.accounts, cardLimit: state.cardLimit, syncedAt: new Date().toISOString() };
-    return fetch('https://sheets.googleapis.com/v4/spreadsheets/'+sync.spreadsheetId+'/values/Sheet1!A1?valueInputOption=RAW', {
+    return fetch('https://sheets.googleapis.com/v4/spreadsheets/'+sync.spreadsheetId+'/values/'+sheetRange()+'?valueInputOption=RAW', {
       method:'PUT', headers: Object.assign({'Content-Type':'application/json'}, driveHeaders()),
       body: JSON.stringify({ values: [[JSON.stringify(payload)]] })
     }).then(function(r){ setSyncStatus(r.ok ? 'sincronizado agora' : 'falha ao sincronizar'); })
