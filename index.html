@@ -74,14 +74,21 @@ body{margin:0;background:#FDFDF9;padding:12px;}
 .add-form button{background:var(--ink);color:var(--paper);border:none;border-radius:4px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500;}
 .add-form button:hover{opacity:.85;}
 .ledger-wrap{display:flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;overflow-x:auto;}
-.ledger-wrap table{flex-shrink:0;flex-grow:1;}
+.ledger-wrap .tx-table{flex-shrink:0;flex-grow:1;font-size:13px;}
 .rail{width:20px;background:var(--card);border-right:1px solid var(--rule);display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:14px 0;flex-shrink:0;}
 .rail span{width:8px;height:8px;border-radius:50%;background:var(--paper);border:1px solid var(--rule);}
+.tx-row{display:grid;grid-template-columns:82px minmax(160px,1fr) 96px 62px 84px 66px 92px 76px;align-items:center;column-gap:7px;padding:0 7px;border-bottom:1px solid var(--rule);}
+.tx-row > div{padding:7px 0;overflow:hidden;}
+.tx-row.tx-head{background:var(--card);font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);white-space:nowrap;}
+.tx-row.tx-head > div{padding:8px 0;}
+#txBody .tx-row:nth-child(odd){background:var(--paper);}
+#txBody .tx-row:nth-child(even){background:var(--stripe);}
+#txBody .tx-row.pendente{background:#FBF3E2;}
+.tx-cell-right{text-align:right;}
 table.tx{width:100%;border-collapse:collapse;font-size:13px;}
 table.tx thead th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);padding:8px 7px;border-bottom:1px solid var(--rule);background:var(--card);white-space:nowrap;}
 table.tx tbody tr{background:var(--paper);}
 table.tx tbody tr:nth-child(even){background:var(--stripe);}
-table.tx tbody tr.pendente{background:#FBF3E2;}
 table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:middle;}
 .badge{font-size:10px;padding:2px 6px;border-radius:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600;white-space:nowrap;}
 .badge.receita{background:#DCEEE6;color:var(--credit);}
@@ -133,7 +140,7 @@ table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:m
   .lc-tab{flex:0 0 auto;}
   .col-hide-mobile{display:none;}
   .mobile-meta{display:block;}
-  table.tx{font-size:12px;}
+  .tx-row{grid-template-columns:76px minmax(120px,1fr) 60px 92px 76px;font-size:12px;}
   .add-form .field{min-width:0;flex-basis:100%;}
   .cp-pay .fi{flex-basis:100%;}
 }
@@ -206,10 +213,12 @@ table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:m
     </form>
     <div class="ledger-wrap">
       <div class="rail" id="rail"></div>
-      <table class="tx">
-        <thead><tr><th>Data</th><th style="width:100%">Local</th><th class="col-hide-mobile">Categoria</th><th>Tipo</th><th class="col-hide-mobile">Carteira</th><th class="col-hide-mobile">Status</th><th style="text-align:right">Valor</th><th></th></tr></thead>
-        <tbody id="txBody"></tbody>
-      </table>
+      <div class="tx-table">
+        <div class="tx-row tx-head">
+          <div>Data</div><div>Local</div><div class="col-hide-mobile">Categoria</div><div>Tipo</div><div class="col-hide-mobile">Carteira</div><div class="col-hide-mobile">Status</div><div class="tx-cell-right">Valor</div><div></div>
+        </div>
+        <div id="txBody"></div>
+      </div>
     </div>
     <div class="empty" id="emptyState" hidden>Nenhum lancamento neste mes ainda.<br>Use o formulario acima para comecar.</div>
     <div class="cat-breakdown" id="catBreakdown"></div>
@@ -582,18 +591,18 @@ table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:m
     renderRail(list.length);
     body.innerHTML = list.map(function(t){
       if(t.id === state.editingId){
-        return '<tr>'+
-          '<td><input class="edit-input" type="date" id="e-date" value="'+t.date+'"></td>'+
-          '<td><input class="edit-input" type="text" id="e-desc" value="'+t.desc.replace(/"/g,'&quot;')+'"></td>'+
-          '<td class="col-hide-mobile"><select class="edit-input" id="e-cat">'+catOptionsHTML(t.category)+'</select></td>'+
-          '<td><select class="edit-input" id="e-type">'+
+        return '<div class="tx-row">'+
+          '<div><input class="edit-input" type="date" id="e-date" value="'+t.date+'"></div>'+
+          '<div><input class="edit-input" type="text" id="e-desc" value="'+t.desc.replace(/"/g,'&quot;')+'"></div>'+
+          '<div class="col-hide-mobile"><select class="edit-input" id="e-cat">'+catOptionsHTML(t.category)+'</select></div>'+
+          '<div><select class="edit-input" id="e-type">'+
             ['receita','cartao','conta','debito','fatura'].map(function(ty){ return '<option value="'+ty+'"'+(ty===t.type?' selected':'')+'>'+TYPE_LABEL[ty]+'</option>'; }).join('')+
-          '</select></td>'+
-          '<td class="col-hide-mobile">'+(t.type==='cartao' ? '<span class="acct-tag">-</span>' : '<select class="edit-input" id="e-acct">'+acctOptionsHTML(t.account)+'</select>')+'</td>'+
-          '<td class="col-hide-mobile"></td>'+
-          '<td><input class="edit-input" type="number" step="0.01" id="e-amount" value="'+t.amount+'" style="text-align:right"></td>'+
-          '<td class="row-actions"><button data-save="'+t.id+'">salvar</button><button data-cancel="1">cancelar</button></td>'+
-        '</tr>';
+          '</select></div>'+
+          '<div class="col-hide-mobile">'+(t.type==='cartao' ? '<span class="acct-tag">-</span>' : '<select class="edit-input" id="e-acct">'+acctOptionsHTML(t.account)+'</select>')+'</div>'+
+          '<div class="col-hide-mobile"></div>'+
+          '<div><input class="edit-input" type="number" step="0.01" id="e-amount" value="'+t.amount+'" style="text-align:right"></div>'+
+          '<div class="row-actions"><button data-save="'+t.id+'">salvar</button><button data-cancel="1">cancelar</button></div>'+
+        '</div>';
       }
       var badgeLabel = TYPE_LABEL[t.type];
       var isPend = t.status === 'pendente';
@@ -608,16 +617,16 @@ table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:m
       var toggleBtn = t.type !== 'receita' ? '<label class="pay-check" title="pago"><input type="checkbox" data-toggle="'+t.id+'"'+(isPend?'':' checked')+'></label>' : '<span class="pay-check-spacer"></span>';
       var acctCell = t.type==='cartao' ? '<span class="acct-tag">-</span>' : '<span class="acct-tag">'+(acctName(t.account)||'-')+'</span>';
       var mobileMeta = '<div class="mobile-meta">'+t.category+' · '+(t.type==='cartao'?'':(acctName(t.account)||'-')+' · ')+(isPend?'Pendente':'Pago')+'</div>';
-      return '<tr class="'+(isPend?'pendente':'')+'">'+
-        '<td class="mono">'+t.date.split('-').reverse().join('/')+'</td>'+
-        '<td>'+t.desc+tag+mobileMeta+'</td>'+
-        '<td class="col-hide-mobile">'+t.category+'</td>'+
-        '<td><span class="badge '+t.type+'">'+badgeLabel+'</span></td>'+
-        '<td class="col-hide-mobile">'+acctCell+'</td>'+
-        '<td class="col-hide-mobile">'+statusBadge+'</td>'+
-        '<td class="amt '+amtClass+'">'+sign+fmtBRL(t.amount)+'</td>'+
-        '<td class="row-actions">'+toggleBtn+'<button data-edit="'+t.id+'" title="editar">'+ICON_EDIT+'</button><button data-del="'+t.id+'" title="excluir">'+ICON_DEL+'</button>'+groupBtn+'</td>'+
-      '</tr>';
+      return '<div class="tx-row '+(isPend?'pendente':'')+'">'+
+        '<div class="mono">'+t.date.split('-').reverse().join('/')+'</div>'+
+        '<div>'+t.desc+tag+mobileMeta+'</div>'+
+        '<div class="col-hide-mobile">'+t.category+'</div>'+
+        '<div><span class="badge '+t.type+'">'+badgeLabel+'</span></div>'+
+        '<div class="col-hide-mobile">'+acctCell+'</div>'+
+        '<div class="col-hide-mobile">'+statusBadge+'</div>'+
+        '<div class="amt '+amtClass+'">'+sign+fmtBRL(t.amount)+'</div>'+
+        '<div class="row-actions">'+toggleBtn+'<button data-edit="'+t.id+'" title="editar">'+ICON_EDIT+'</button><button data-del="'+t.id+'" title="excluir">'+ICON_DEL+'</button>'+groupBtn+'</div>'+
+      '</div>';
     }).join('');
 
     Array.prototype.forEach.call(body.querySelectorAll('[data-toggle]'), function(b){
