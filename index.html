@@ -296,6 +296,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
   function invoiceMonthFor(dateStr){
     var d = new Date(dateStr + 'T00:00:00');
     if(d.getDate() > (state.cardClosingDay || 29)) d.setMonth(d.getMonth() + 1);
+    d.setMonth(d.getMonth() + 1); // fatura e rotulada pelo mes de vencimento, um mes apos o fechamento do ciclo
     return d.getFullYear() + '-' + pad2(d.getMonth() + 1);
   }
 
