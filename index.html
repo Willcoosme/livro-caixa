@@ -104,7 +104,8 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
 .amt.debit{color:var(--debit);}
 .amt.muted{color:var(--ink-soft);}
 .row-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
-.row-actions button{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:12px;text-decoration:underline;padding:0;}
+.row-actions button{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:12px;text-decoration:underline;padding:0;display:inline-flex;align-items:center;}
+.row-actions button svg{display:block;}
 .row-actions button:hover{color:var(--ink);}
 .row-actions button.pay{color:var(--credit);font-weight:600;}
 .pay-check{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--ink-soft);cursor:pointer;text-transform:uppercase;letter-spacing:.3px;}
@@ -279,6 +280,8 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
   ];
   var TYPE_LABEL = {receita:'Receita', cartao:'Cartao', conta:'Conta', debito:'Débito', fatura:'Fatura'};
   var FATURA_CAT = 'Fatura cartão';
+  var ICON_EDIT = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var ICON_DEL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
   var SYNC_SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
   var sync = { clientId:'', tokenClient:null, accessToken:null, spreadsheetId:null, sheetTitle:'Sheet1', fileName:'livro-caixa-dados', timer:null };
   var state = { tx: [], cats: DEFAULT_CATS.slice(), recurring: [], accounts: [], cardLimit: 0, cardClosingDay: 29, curMonth: new Date().toISOString().slice(0,7), tab: 'mes', editingId: null, loaded:false };
@@ -611,7 +614,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
         '<td class="col-hide-mobile">'+acctCell+'</td>'+
         '<td class="col-hide-mobile">'+statusBadge+'</td>'+
         '<td class="amt '+amtClass+'">'+sign+fmtBRL(t.amount)+'</td>'+
-        '<td class="row-actions">'+toggleBtn+'<button data-edit="'+t.id+'">editar</button><button data-del="'+t.id+'">excluir</button>'+groupBtn+'</td>'+
+        '<td class="row-actions">'+toggleBtn+'<button data-edit="'+t.id+'" title="editar">'+ICON_EDIT+'</button><button data-del="'+t.id+'" title="excluir">'+ICON_DEL+'</button>'+groupBtn+'</td>'+
       '</tr>';
     }).join('');
 
@@ -742,7 +745,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
         '<td>'+tpl.category+'</td>'+
         '<td class="mono">dia '+tpl.day+'</td>'+
         '<td class="amt debit">'+fmtBRL(tpl.amount)+'</td>'+
-        '<td class="row-actions"><button data-recedit="'+tpl.id+'">editar</button><button data-recdel="'+tpl.id+'">excluir</button></td>'+
+        '<td class="row-actions"><button data-recedit="'+tpl.id+'" title="editar">'+ICON_EDIT+'</button><button data-recdel="'+tpl.id+'" title="excluir">'+ICON_DEL+'</button></td>'+
       '</tr>';
     }).join('');
     Array.prototype.forEach.call(body.querySelectorAll('[data-recedit]'), function(b){
@@ -775,7 +778,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
         '<td class="amt">'+fmtBRL(a.opening||0)+'</td>'+
         '<td class="amt'+(bal<0?' debit':' credit')+'">'+fmtBRL(bal)+'</td>'+
         '<td>'+(a.canPayCard ? 'Sim' : 'Não')+'</td>'+
-        '<td class="row-actions"><button data-acedit="'+a.id+'">editar</button><button data-acdel="'+a.id+'">excluir</button></td>'+
+        '<td class="row-actions"><button data-acedit="'+a.id+'" title="editar">'+ICON_EDIT+'</button><button data-acdel="'+a.id+'" title="excluir">'+ICON_DEL+'</button></td>'+
       '</tr>';
     }).join('');
     Array.prototype.forEach.call(body.querySelectorAll('[data-acedit]'), function(b){
