@@ -99,7 +99,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
 .badge.st-pendente{background:#FAE9C6;color:var(--pending);}
 .acct-tag{font-size:10px;color:var(--ink-soft);}
 .parcela-tag{font-size:10px;color:var(--ink-soft);font-style:italic;}
-.amt{font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:500;}
+.amt{font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:500;white-space:nowrap;}
 .amt.credit{color:var(--credit);}
 .amt.debit{color:var(--debit);}
 .amt.muted{color:var(--ink-soft);}
@@ -107,6 +107,8 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
 .row-actions button{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:12px;text-decoration:underline;padding:0;}
 .row-actions button:hover{color:var(--ink);}
 .row-actions button.pay{color:var(--credit);font-weight:600;}
+.pay-check{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--ink-soft);cursor:pointer;text-transform:uppercase;letter-spacing:.3px;}
+.pay-check input{width:13px;height:13px;cursor:pointer;margin:0;}
 .empty{padding:30px 10px;text-align:center;color:var(--ink-soft);font-style:italic;font-family:'Source Serif 4',serif;}
 .cat-breakdown{margin-top:20px;}
 .cat-breakdown h3{font-size:13px;margin-bottom:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;}
@@ -437,7 +439,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
 
   function monthOf(dateStr){ return dateStr.slice(0,7); }
   function monthTx(ym){ return state.tx.filter(function(t){ return monthOf(t.date) === ym; }); }
-  function counted(t){ return t.status !== 'pendente'; }
+  function counted(t){ return t.type !== 'conta' || t.status !== 'pendente'; }
   function acctName(id){ var a = state.accounts.find(function(x){ return x.id === id; }); return a ? a.name : ''; }
 
   function ensureRecurringForMonth(ym){
@@ -598,7 +600,7 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
       var tag = tagParts.length ? ' <span class="parcela-tag">('+tagParts.join(' · ')+')</span>' : '';
       var groupBtn = t.groupId ? '<button data-delgroup="'+t.groupId+'">excluir compra</button>' : '';
       var statusBadge = '<span class="badge st-'+(isPend?'pendente':'pago')+'">'+(isPend?'Pendente':'Pago')+'</span>';
-      var toggleBtn = t.type !== 'receita' ? '<button class="'+(isPend?'pay':'')+'" data-toggle="'+t.id+'">'+(isPend?'marcar pago':'marcar pendente')+'</button>' : '';
+      var toggleBtn = t.type !== 'receita' ? '<label class="pay-check"><input type="checkbox" data-toggle="'+t.id+'"'+(isPend?'':' checked')+'> pago</label>' : '';
       var acctCell = t.type==='cartao' ? '<span class="acct-tag">-</span>' : '<span class="acct-tag">'+(acctName(t.account)||'-')+'</span>';
       var mobileMeta = '<div class="mobile-meta">'+t.category+' · '+(t.type==='cartao'?'':(acctName(t.account)||'-')+' · ')+(isPend?'Pendente':'Pago')+'</div>';
       return '<tr class="'+(isPend?'pendente':'')+'">'+
@@ -614,10 +616,10 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
     }).join('');
 
     Array.prototype.forEach.call(body.querySelectorAll('[data-toggle]'), function(b){
-      b.addEventListener('click', function(){
+      b.addEventListener('change', function(){
         var id = b.getAttribute('data-toggle');
         var tx = state.tx.find(function(t){ return t.id === id; });
-        tx.status = tx.status === 'pendente' ? 'pago' : 'pendente';
+        tx.status = b.checked ? 'pago' : 'pendente';
         saveTx(); renderAll();
       });
     });
@@ -889,6 +891,9 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
     if(state.cats.indexOf(FATURA_CAT) === -1){ state.cats.push(FATURA_CAT); saveCats(); }
     var today = new Date().toISOString().slice(0,10);
     state.tx.push({ id: uid(), date: today, desc: 'Pagamento fatura - '+monthLabel(state.curMonth), category: FATURA_CAT, type: 'fatura', account: acctId, amount: amount, status: 'pago', invoiceMonth: state.curMonth });
+    state.tx.forEach(function(t){
+      if(t.type === 'cartao' && monthOf(t.date) === state.curMonth) t.status = 'pago';
+    });
     saveTx();
     document.getElementById('cpPayAmount').dataset.touched = '';
     renderAll();
@@ -962,11 +967,11 @@ table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:
           d.setMonth(d.getMonth() + i);
           dstr = d.toISOString().slice(0,10);
         }
-        state.tx.push({ id: uid(), date: dstr, purchaseDate: isCartao ? baseDate : undefined, desc: desc, category: cat, type: type, amount: val, status: 'pago', groupId: groupId, installmentInfo: (i+1)+'/'+parcelas });
+        state.tx.push({ id: uid(), date: dstr, purchaseDate: isCartao ? baseDate : undefined, desc: desc, category: cat, type: type, amount: val, status: isCartao ? 'pendente' : 'pago', groupId: groupId, installmentInfo: (i+1)+'/'+parcelas });
       }
     } else {
       var singleDate = isCartao ? (baseInvoiceMonth + '-01') : baseDate;
-      state.tx.push({ id: uid(), date: singleDate, purchaseDate: isCartao ? baseDate : undefined, desc: desc, category: cat, type: type, account: isCartao ? undefined : acctVal, amount: amount, status: 'pago' });
+      state.tx.push({ id: uid(), date: singleDate, purchaseDate: isCartao ? baseDate : undefined, desc: desc, category: cat, type: type, account: isCartao ? undefined : acctVal, amount: amount, status: isCartao ? 'pendente' : 'pago' });
     }
     saveTx();
     document.getElementById('f-desc').value = '';
