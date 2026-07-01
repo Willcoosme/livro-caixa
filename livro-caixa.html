@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Livro Caixa</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+body{margin:0;background:#FDFDF9;padding:12px;}
+:root{
+  --paper:#FDFDF9;
+  --stripe:#E6F1E2;
+  --ink:#1E3A2E;
+  --ink-soft:#5B7268;
+  --debit:#A8433F;
+  --credit:#2F6F5E;
+  --avulso:#3A5570;
+  --pending:#B8862C;
+  --rule:#C7D5C1;
+  --card:#F4F8F1;
+}
+*{box-sizing:border-box;}
+.lc{font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:var(--paper);padding:0;max-width:820px;margin:0 auto;}
+.lc h1,.lc h2,.lc h3{font-family:'Source Serif 4',serif;font-weight:600;margin:0;}
+.lc .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;}
+.lc-header{display:flex;justify-content:space-between;align-items:flex-end;padding:18px 4px 10px;border-bottom:2px solid var(--ink);flex-wrap:wrap;gap:10px;}
+.lc-brand h1{font-size:24px;letter-spacing:.3px;}
+.lc-brand p{margin:2px 0 0;font-size:12px;color:var(--ink-soft);font-style:italic;font-family:'Source Serif 4',serif;}
+.lc-monthnav{display:flex;align-items:center;gap:10px;}
+.lc-monthnav button{background:none;border:1px solid var(--rule);border-radius:4px;color:var(--ink);width:28px;height:28px;font-size:15px;cursor:pointer;}
+.lc-monthnav button:hover{background:var(--stripe);}
+.lc-monthnav span{font-size:14px;min-width:112px;text-align:center;text-transform:capitalize;font-weight:500;}
+.lc-stamps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 4px;}
+.stamp{border:2px dashed var(--rule);border-radius:8px;padding:10px 8px;text-align:center;transform:rotate(-1deg);}
+.stamp:nth-child(2){transform:rotate(1deg);}
+.stamp:nth-child(3){transform:rotate(-1.2deg);}
+.stamp:nth-child(4){transform:rotate(0.8deg);}
+.stamp .label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:4px;}
+.stamp .val{font-size:15px;font-weight:600;}
+.stamp.credit{border-color:var(--credit);color:var(--credit);}
+.stamp.debit{border-color:var(--debit);color:var(--debit);}
+.stamp.avulso{border-color:var(--avulso);color:var(--avulso);}
+.stamp.balance-pos{border-color:var(--credit);color:var(--credit);}
+.stamp.balance-neg{border-color:var(--debit);color:var(--debit);}
+.wallets-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;padding:0 4px 16px;}
+.wallet-chip{border:1px solid var(--rule);border-radius:8px;padding:8px 10px;background:var(--card);}
+.wallet-chip .name{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);display:block;}
+.wallet-chip .bal{font-size:14px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+.wallet-chip .bal.neg{color:var(--debit);}
+.card-panel{margin:0 4px 16px;border:1px solid var(--rule);border-radius:8px;background:var(--card);padding:12px 14px;}
+.card-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.card-panel-head h3{font-size:14px;text-transform:uppercase;letter-spacing:.5px;font-family:'IBM Plex Sans',sans-serif;color:var(--ink-soft);}
+.card-panel-head button{background:none;border:1px solid var(--rule);border-radius:4px;padding:4px 9px;font-size:11px;cursor:pointer;color:var(--ink-soft);}
+.card-panel-head button:hover{color:var(--ink);border-color:var(--ink);}
+.cp-bar-bg{background:var(--stripe);border-radius:5px;height:14px;overflow:hidden;margin-bottom:4px;}
+.cp-bar-fill{height:100%;background:var(--credit);border-radius:5px;transition:width .2s;}
+.cp-bar-fill.warn{background:#C08A2E;}
+.cp-bar-fill.over{background:var(--debit);}
+.cp-pct{font-size:11px;color:var(--ink-soft);margin-bottom:10px;}
+.cp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;}
+.cp-stats .label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);margin-bottom:2px;}
+.cp-stats .val{font-size:14px;font-weight:600;}
+.lc-tabs{display:flex;gap:4px;padding:0 4px;border-bottom:1px solid var(--rule);flex-wrap:wrap;}
+.lc-tab{background:none;border:none;font-family:'Source Serif 4',serif;font-size:14px;padding:8px 14px;cursor:pointer;color:var(--ink-soft);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.lc-tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600;}
+.lc-section{padding:14px 4px 30px;}
+.add-form{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;padding:12px;background:var(--card);border-radius:8px;margin-bottom:16px;}
+.add-form .field{display:flex;flex-direction:column;gap:3px;flex:1;min-width:100px;}
+.add-form label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);}
+.add-form input,.add-form select{font-family:'IBM Plex Mono',monospace;font-size:13px;padding:6px 7px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);color:var(--ink);}
+.add-form input[type=text]{font-family:'IBM Plex Sans',sans-serif;}
+.add-form button{background:var(--ink);color:var(--paper);border:none;border-radius:4px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:500;}
+.add-form button:hover{opacity:.85;}
+.ledger-wrap{display:flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;overflow-x:auto;}
+.rail{width:20px;background:var(--card);border-right:1px solid var(--rule);display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:14px 0;flex-shrink:0;}
+.rail span{width:8px;height:8px;border-radius:50%;background:var(--paper);border:1px solid var(--rule);}
+table.tx{width:100%;border-collapse:collapse;font-size:13px;}
+table.tx thead th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);padding:8px 10px;border-bottom:1px solid var(--rule);background:var(--card);white-space:nowrap;}
+table.tx tbody tr{background:var(--paper);}
+table.tx tbody tr:nth-child(even){background:var(--stripe);}
+table.tx tbody tr.pendente{background:#FBF3E2;}
+table.tx td{padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:middle;}
+.badge{font-size:10px;padding:2px 7px;border-radius:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:600;white-space:nowrap;}
+.badge.receita{background:#DCEEE6;color:var(--credit);}
+.badge.cartao{background:#F5E0DE;color:var(--debit);}
+.badge.conta{background:#EFE6D8;color:#8A5A24;}
+.badge.debito{background:#E1E8ED;color:var(--avulso);}
+.badge.fatura{background:#EDE6F5;color:#6B4FA0;}
+.cp-pay{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:flex-end;border-top:1px dashed var(--rule);padding-top:10px;}
+.cp-pay .fi{display:flex;flex-direction:column;gap:2px;}
+.cp-pay label{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);}
+.cp-pay select,.cp-pay input{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:5px 7px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);color:var(--ink);}
+.cp-pay button{background:var(--ink);color:var(--paper);border:none;border-radius:4px;padding:7px 12px;font-size:12px;cursor:pointer;}
+.cp-pay button:hover{opacity:.85;}
+.cp-pay-note{font-size:10px;color:var(--ink-soft);width:100%;}
+.badge.st-pago{background:#DCEEE6;color:var(--credit);}
+.badge.st-pendente{background:#FAE9C6;color:var(--pending);}
+.acct-tag{font-size:10px;color:var(--ink-soft);}
+.parcela-tag{font-size:10px;color:var(--ink-soft);font-style:italic;}
+.amt{font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:500;}
+.amt.credit{color:var(--credit);}
+.amt.debit{color:var(--debit);}
+.amt.muted{color:var(--ink-soft);}
+.row-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
+.row-actions button{background:none;border:none;cursor:pointer;color:var(--ink-soft);font-size:12px;text-decoration:underline;padding:0;}
+.row-actions button:hover{color:var(--ink);}
+.row-actions button.pay{color:var(--credit);font-weight:600;}
+.empty{padding:30px 10px;text-align:center;color:var(--ink-soft);font-style:italic;font-family:'Source Serif 4',serif;}
+.cat-breakdown{margin-top:20px;}
+.cat-breakdown h3{font-size:13px;margin-bottom:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;}
+.cat-row{display:grid;grid-template-columns:110px 1fr 70px;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;}
+.cat-bar-bg{background:var(--stripe);border-radius:3px;height:10px;overflow:hidden;}
+.cat-bar-fill{height:100%;background:var(--debit);border-radius:3px;}
+.cat-val{text-align:right;font-family:'IBM Plex Mono',monospace;}
+.edit-input{width:100%;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:3px 5px;border:1px solid var(--rule);border-radius:3px;}
+.overview-block{margin-bottom:28px;}
+.overview-block h3{font-size:13px;margin-bottom:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;}
+.toolbar{display:flex;justify-content:flex-end;padding:4px 4px 0;}
+.toolbar button{background:none;border:1px solid var(--rule);border-radius:4px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--ink-soft);}
+.toolbar button:hover{color:var(--ink);border-color:var(--ink);}
+.note{font-size:12px;color:var(--ink-soft);font-style:italic;font-family:'Source Serif 4',serif;margin:0 4px 14px;}
+</style>
+</head>
+<body>
+<div class="lc" id="app">
+  <div class="lc-header">
+    <div class="lc-brand">
+      <h1>Livro Caixa</h1>
+      <p>cada gasto, com data e local</p>
+    </div>
+    <div class="lc-monthnav">
+      <button id="prevMonth" aria-label="Mes anterior">&lsaquo;</button>
+      <span id="monthLabel">-</span>
+      <button id="nextMonth" aria-label="Proximo mes">&rsaquo;</button>
+    </div>
+  </div>
+  <div class="lc-stamps" id="stamps"></div>
+  <div class="wallets-row" id="walletsRow"></div>
+  <div class="card-panel" id="cardPanel">
+    <div class="card-panel-head">
+      <h3>Cartão de crédito</h3>
+      <button id="editLimitBtn">editar limite</button>
+    </div>
+    <div class="cp-bar-bg"><div class="cp-bar-fill" id="cpBarFill" style="width:0%"></div></div>
+    <div class="cp-pct" id="cpPct"></div>
+    <div class="cp-stats">
+      <div><span class="label">Utilizado</span><span class="val mono" id="cpUsed"></span></div>
+      <div><span class="label">Disponível</span><span class="val mono" id="cpAvail"></span></div>
+      <div><span class="label">Fatura do mês</span><span class="val mono" id="cpInvoice"></span></div>
+    </div>
+    <div class="cp-pay">
+      <div class="fi"><label>Pagar fatura com</label><select id="cpPayAcct"></select></div>
+      <div class="fi"><label>Valor</label><input type="number" step="0.01" id="cpPayAmount" style="max-width:110px"></div>
+      <button type="button" id="cpPayBtn">Registrar pagamento</button>
+      <span class="cp-pay-note">O valor sai da carteira escolhida; a Wiipo nao aparece aqui pois e vale-alimentacao.</span>
+    </div>
+  </div>
+  <div class="lc-tabs">
+    <button class="lc-tab active" data-tab="mes">Mes</button>
+    <button class="lc-tab" data-tab="geral">Visao geral</button>
+    <button class="lc-tab" data-tab="fixas">Contas fixas</button>
+    <button class="lc-tab" data-tab="carteiras">Carteiras</button>
+    <button class="lc-tab" data-tab="sync">Sincronizar</button>
+  </div>
+  <div class="lc-section" id="tab-mes">
+    <form class="add-form" id="addForm">
+      <div class="field"><label>Data</label><input type="date" id="f-date" required></div>
+      <div class="field" style="flex:2"><label>Local / descricao</label><input type="text" id="f-desc" placeholder="ex: mercado, uber" required></div>
+      <div class="field"><label>Categoria</label><select id="f-cat"></select></div>
+      <div class="field"><label>Tipo</label>
+        <select id="f-type">
+          <option value="receita">Receita</option>
+          <option value="cartao">Cartao</option>
+          <option value="conta">Conta fixa</option>
+          <option value="debito">Débito (avulso)</option>
+        </select>
+      </div>
+      <div class="field" id="acctField"><label>Carteira</label><select id="f-acct"></select></div>
+      <div class="field"><label>Valor (R$)</label><input type="number" step="0.01" min="0" id="f-amount" placeholder="0,00" required></div>
+      <div class="field" id="parcelasField" style="display:none;max-width:90px"><label>Parcelas</label><input type="number" min="1" step="1" id="f-parcelas" value="1"></div>
+      <button type="submit">Lancar</button>
+    </form>
+    <div class="ledger-wrap">
+      <div class="rail" id="rail"></div>
+      <table class="tx">
+        <thead><tr><th>Data</th><th>Local</th><th>Categoria</th><th>Tipo</th><th>Carteira</th><th>Status</th><th style="text-align:right">Valor</th><th></th></tr></thead>
+        <tbody id="txBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyState" hidden>Nenhum lancamento neste mes ainda.<br>Use o formulario acima para comecar.</div>
+    <div class="cat-breakdown" id="catBreakdown"></div>
+  </div>
+  <div class="lc-section" id="tab-geral" hidden>
+    <p class="note">Valores pendentes (contas fixas ainda nao pagas) nao entram nesses totais.</p>
+    <div class="overview-block">
+      <h3>Saldo mensal</h3>
+      <div id="overviewBalance"></div>
+    </div>
+    <div class="overview-block">
+      <h3>Categorias com mais gasto (acumulado)</h3>
+      <div id="overviewCats"></div>
+    </div>
+    <div class="toolbar"><button id="exportBtn">Exportar CSV</button></div>
+  </div>
+  <div class="lc-section" id="tab-fixas" hidden>
+    <p class="note">Cadastre aqui valores que se repetem todo mes (aluguel, internet, etc). Todo mes uma linha "pendente" aparece sozinha no Livro Caixa; ela so entra no saldo quando voce marcar como paga.</p>
+    <form class="add-form" id="recForm">
+      <input type="hidden" id="r-editid" value="">
+      <div class="field" style="flex:2"><label>Descricao</label><input type="text" id="r-desc" required placeholder="ex: aluguel"></div>
+      <div class="field"><label>Categoria</label><select id="r-cat"></select></div>
+      <div class="field"><label>Valor (R$)</label><input type="number" step="0.01" min="0" id="r-amount" required></div>
+      <div class="field" style="max-width:90px"><label>Dia venc.</label><input type="number" min="1" max="31" id="r-day" value="5" required></div>
+      <button type="submit" id="recSubmitBtn">Adicionar fixa</button>
+    </form>
+    <table class="tx">
+      <thead><tr><th>Descricao</th><th>Categoria</th><th>Dia</th><th style="text-align:right">Valor</th><th></th></tr></thead>
+      <tbody id="recBody"></tbody>
+    </table>
+    <div class="empty" id="recEmpty" hidden>Nenhuma conta fixa cadastrada ainda.</div>
+  </div>
+  <div class="lc-section" id="tab-carteiras" hidden>
+    <p class="note">Suas fontes de dinheiro: banco, vale-alimentacao, cofrinhos etc. Receitas somam, contas e debitos avulsos subtraem. O cartao de credito e controlado no painel proprio, nao aqui.</p>
+    <form class="add-form" id="acctForm">
+      <input type="hidden" id="a-editid" value="">
+      <div class="field" style="flex:2"><label>Nome</label><input type="text" id="a-name" required placeholder="ex: Bradesco"></div>
+      <div class="field"><label>Saldo inicial (R$)</label><input type="number" step="0.01" id="a-opening" value="0"></div>
+      <div class="field" style="flex:0 0 auto;flex-direction:row;align-items:center;gap:6px;padding-bottom:6px">
+        <input type="checkbox" id="a-canpay" checked style="width:auto">
+        <label style="margin:0">Pode pagar fatura do cartão</label>
+      </div>
+      <button type="submit" id="acctSubmitBtn">Adicionar carteira</button>
+    </form>
+    <table class="tx">
+      <thead><tr><th>Nome</th><th style="text-align:right">Saldo inicial</th><th style="text-align:right">Saldo atual</th><th>Paga fatura?</th><th></th></tr></thead>
+      <tbody id="acctBody"></tbody>
+    </table>
+  </div>
+  <div class="lc-section" id="tab-sync" hidden>
+    <p class="note">Conecta sua conta Google e cria/usa uma planilha (oculta, so leitura via API) no seu Drive pra sincronizar os dados entre celular e computador. So funciona hospedado num endereco http/https - nao funciona abrindo o arquivo direto do disco.</p>
+    <form class="add-form" id="syClientForm" style="align-items:flex-end">
+      <div class="field" style="flex:2"><label>Client ID do Google (OAuth)</label><input type="text" id="sy-clientid" placeholder="xxxx.apps.googleusercontent.com"></div>
+      <button type="submit">Salvar</button>
+    </form>
+    <div style="display:flex;gap:10px;align-items:center;margin:14px 4px;flex-wrap:wrap">
+      <button type="button" id="syConnectBtn" class="lc-tab" style="border:1px solid var(--rule);border-radius:4px">Conectar Google</button>
+      <button type="button" id="syNowBtn" class="lc-tab" style="border:1px solid var(--rule);border-radius:4px" disabled>Sincronizar agora</button>
+      <span id="syStatus" class="note" style="margin:0">desconectado</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var DEFAULT_CATS = ["Alimentacao","Transporte","Moradia","Cartao - parcela","Lazer","Saude","Assinaturas","Educacao","Salario","Outros"];
+  var DEFAULT_ACCTS = [
+    {id:'bradesco', name:'Bradesco', opening:0, canPayCard:true},
+    {id:'wiipo', name:'Wiipo (VA)', opening:0, canPayCard:false},
+    {id:'cofrinho-ml', name:'Cofrinho Mercado Livre', opening:0, canPayCard:true}
+  ];
+  var TYPE_LABEL = {receita:'Receita', cartao:'Cartao', conta:'Conta', debito:'Débito', fatura:'Fatura'};
+  var FATURA_CAT = 'Fatura cartão';
+  var SYNC_SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
+  var sync = { clientId:'', tokenClient:null, accessToken:null, spreadsheetId:null, fileName:'livro-caixa-dados', timer:null };
+  var state = { tx: [], cats: DEFAULT_CATS.slice(), recurring: [], accounts: [], cardLimit: 0, curMonth: new Date().toISOString().slice(0,7), tab: 'mes', editingId: null, loaded:false };
+
+  function fmtBRL(n){
+    var neg = n < 0;
+    var v = Math.abs(n).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    return (neg?'-':'') + 'R$ ' + v;
+  }
+  function monthLabel(ym){
+    var months = ['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    var parts = ym.split('-'); return months[parseInt(parts[1],10)-1] + ' / ' + parts[0];
+  }
+  function uid(){ return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+  function pad2(n){ return n < 10 ? '0'+n : ''+n; }
+  function daysInMonth(y,m){ return new Date(y, m, 0).getDate(); }
+
+  function load(){
+    try{ var t = localStorage.getItem('fin-transactions'); state.tx = t ? JSON.parse(t) : []; }catch(e){ state.tx = []; }
+    try{ var c = localStorage.getItem('fin-categories'); state.cats = c ? JSON.parse(c) : DEFAULT_CATS.slice(); }catch(e){ state.cats = DEFAULT_CATS.slice(); }
+    try{ var l = localStorage.getItem('fin-card-limit'); state.cardLimit = l ? parseFloat(l) : 0; }catch(e){ state.cardLimit = 0; }
+    try{ var r = localStorage.getItem('fin-recurring'); state.recurring = r ? JSON.parse(r) : []; }catch(e){ state.recurring = []; }
+    try{ var a = localStorage.getItem('fin-accounts'); state.accounts = a ? JSON.parse(a) : DEFAULT_ACCTS.slice(); }catch(e){ state.accounts = DEFAULT_ACCTS.slice(); }
+    if(state.accounts.length === 0) state.accounts = DEFAULT_ACCTS.slice();
+    var migrated = false;
+    state.accounts.forEach(function(a){
+      if(a.canPayCard === undefined){
+        var n = (a.name||'').toLowerCase();
+        a.canPayCard = !(n.indexOf('wiipo') > -1 || n.indexOf('vale') > -1 || n.indexOf(' va') > -1);
+        migrated = true;
+      }
+    });
+    if(migrated) saveAccounts();
+    try{ sync.clientId = localStorage.getItem('fin-google-clientid') || ''; }catch(e){}
+    try{ sync.spreadsheetId = localStorage.getItem('fin-google-sheetid') || null; }catch(e){}
+    state.loaded = true;
+    ensureRecurringForMonth(state.curMonth);
+    render();
+    if(sync.clientId){ document.getElementById('sy-clientid').value = sync.clientId; initGoogle(); }
+  }
+  function saveTx(){ try{ localStorage.setItem('fin-transactions', JSON.stringify(state.tx)); }catch(e){} scheduleSync(); }
+  function saveCats(){ try{ localStorage.setItem('fin-categories', JSON.stringify(state.cats)); }catch(e){} scheduleSync(); }
+  function saveLimit(){ try{ localStorage.setItem('fin-card-limit', String(state.cardLimit)); }catch(e){} scheduleSync(); }
+  function saveRecurring(){ try{ localStorage.setItem('fin-recurring', JSON.stringify(state.recurring)); }catch(e){} scheduleSync(); }
+  function saveAccounts(){ try{ localStorage.setItem('fin-accounts', JSON.stringify(state.accounts)); }catch(e){} scheduleSync(); }
+
+  function setSyncStatus(msg){ var el = document.getElementById('syStatus'); if(el) el.textContent = msg; }
+
+  function initGoogle(){
+    if(!sync.clientId || !window.google || !window.google.accounts) return;
+    sync.tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: sync.clientId,
+      scope: SYNC_SCOPES,
+      callback: function(resp){
+        if(!resp || resp.error){ setSyncStatus('erro ao conectar: '+(resp&&resp.error||'')); return; }
+        sync.accessToken = resp.access_token;
+        setSyncStatus('conectado, preparando planilha...');
+        document.getElementById('syNowBtn').disabled = false;
+        ensureSpreadsheet().then(pullFromSheet);
+      }
+    });
+  }
+
+  function driveHeaders(){ return { Authorization: 'Bearer ' + sync.accessToken }; }
+
+  function ensureSpreadsheet(){
+    if(sync.spreadsheetId){
+      return fetch('https://www.googleapis.com/drive/v3/files/'+sync.spreadsheetId+'?fields=id', {headers:driveHeaders()})
+        .then(function(r){ if(r.ok) return true; return findOrCreateSheet(); })
+        .catch(findOrCreateSheet);
+    }
+    return findOrCreateSheet();
+  }
+
+  function findOrCreateSheet(){
+    var q = encodeURIComponent("name='"+sync.fileName+"' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false");
+    return fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name)', {headers:driveHeaders()})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data.files && data.files.length){
+          sync.spreadsheetId = data.files[0].id;
+        } else {
+          return fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+            method:'POST', headers: Object.assign({'Content-Type':'application/json'}, driveHeaders()),
+            body: JSON.stringify({ properties:{ title: sync.fileName } })
+          }).then(function(r){ return r.json(); }).then(function(created){ sync.spreadsheetId = created.spreadsheetId; });
+        }
+      })
+      .then(function(){ try{ localStorage.setItem('fin-google-sheetid', sync.spreadsheetId); }catch(e){} });
+  }
+
+  function pullFromSheet(){
+    if(!sync.spreadsheetId) return;
+    return fetch('https://sheets.googleapis.com/v4/spreadsheets/'+sync.spreadsheetId+'/values/Sheet1!A1', {headers:driveHeaders()})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var raw = data.values && data.values[0] && data.values[0][0];
+        if(raw){
+          var remote = JSON.parse(raw);
+          state.tx = remote.tx || [];
+          state.cats = remote.cats || DEFAULT_CATS.slice();
+          state.recurring = remote.recurring || [];
+          state.accounts = remote.accounts || DEFAULT_ACCTS.slice();
+          state.cardLimit = remote.cardLimit || 0;
+          try{
+            localStorage.setItem('fin-transactions', JSON.stringify(state.tx));
+            localStorage.setItem('fin-categories', JSON.stringify(state.cats));
+            localStorage.setItem('fin-recurring', JSON.stringify(state.recurring));
+            localStorage.setItem('fin-accounts', JSON.stringify(state.accounts));
+            localStorage.setItem('fin-card-limit', String(state.cardLimit));
+          }catch(e){}
+          setSyncStatus('conectado - dados atualizados da nuvem');
+          render();
+        } else {
+          setSyncStatus('conectado - planilha nova, enviando dados locais');
+          pushToSheet();
+        }
+      })
+      .catch(function(){ setSyncStatus('erro ao buscar dados da nuvem'); });
+  }
+
+  function pushToSheet(){
+    if(!sync.spreadsheetId || !sync.accessToken) return;
+    var payload = { tx: state.tx, cats: state.cats, recurring: state.recurring, accounts: state.accounts, cardLimit: state.cardLimit, syncedAt: new Date().toISOString() };
+    return fetch('https://sheets.googleapis.com/v4/spreadsheets/'+sync.spreadsheetId+'/values/Sheet1!A1?valueInputOption=RAW', {
+      method:'PUT', headers: Object.assign({'Content-Type':'application/json'}, driveHeaders()),
+      body: JSON.stringify({ values: [[JSON.stringify(payload)]] })
+    }).then(function(r){ setSyncStatus(r.ok ? 'sincronizado agora' : 'falha ao sincronizar'); })
+      .catch(function(){ setSyncStatus('falha ao sincronizar (sem internet?)'); });
+  }
+
+  function scheduleSync(){
+    if(!sync.accessToken || !sync.spreadsheetId) return;
+    clearTimeout(sync.timer);
+    sync.timer = setTimeout(pushToSheet, 900);
+  }
+
+  function monthOf(dateStr){ return dateStr.slice(0,7); }
+  function monthTx(ym){ return state.tx.filter(function(t){ return monthOf(t.date) === ym; }); }
+  function counted(t){ return t.status !== 'pendente'; }
+  function acctName(id){ var a = state.accounts.find(function(x){ return x.id === id; }); return a ? a.name : ''; }
+
+  function ensureRecurringForMonth(ym){
+    var parts = ym.split('-'); var y = parseInt(parts[0],10), m = parseInt(parts[1],10);
+    var changed = false;
+    state.recurring.forEach(function(tpl){
+      if(tpl.startMonth > ym) return;
+      var exists = state.tx.some(function(t){ return t.recurringId === tpl.id && monthOf(t.date) === ym; });
+      if(!exists){
+        var day = Math.min(tpl.day, daysInMonth(y,m));
+        var dstr = y + '-' + pad2(m) + '-' + pad2(day);
+        state.tx.push({ id: uid(), date: dstr, desc: tpl.desc, category: tpl.category, type: 'conta', account: tpl.account || state.accounts[0].id, amount: tpl.amount, status: 'pendente', recurringId: tpl.id });
+        changed = true;
+      }
+    });
+    if(changed) saveTx();
+  }
+
+  function monthTotals(ym){
+    var list = monthTx(ym);
+    var receita=0, cartao=0, conta=0, debito=0, pendenteConta=0;
+    list.forEach(function(t){
+      if(t.type==='receita' && counted(t)) receita += t.amount;
+      else if(t.type==='cartao' && counted(t)) cartao += t.amount;
+      else if(t.type==='conta'){ if(counted(t)) conta += t.amount; else pendenteConta += t.amount; }
+      else if(t.type==='debito' && counted(t)) debito += t.amount;
+    });
+    return { receita: receita, cartao: cartao, conta: conta, debito: debito, pendenteConta: pendenteConta, saldo: receita - cartao - conta - debito };
+  }
+
+  function accountBalance(accId){
+    var opening = 0;
+    var acc = state.accounts.find(function(a){ return a.id === accId; });
+    if(acc) opening = acc.opening || 0;
+    var receitas = 0, gastos = 0;
+    state.tx.forEach(function(t){
+      if(t.account !== accId || !counted(t)) return;
+      if(t.type === 'receita') receitas += t.amount;
+      else if(t.type === 'conta' || t.type === 'debito' || t.type === 'fatura') gastos += t.amount;
+    });
+    return opening + receitas - gastos;
+  }
+
+  function allMonthsSorted(){
+    var set = {};
+    state.tx.forEach(function(t){ set[monthOf(t.date)] = true; });
+    set[state.curMonth] = true;
+    return Object.keys(set).sort();
+  }
+
+  function renderStamps(){
+    var tot = monthTotals(state.curMonth);
+    var el = document.getElementById('stamps');
+    var contaLabel = tot.pendenteConta > 0 ? 'Contas <span style="font-size:9px;opacity:.75">('+fmtBRL(tot.pendenteConta)+' pend.)</span>' : 'Contas';
+    el.innerHTML =
+      '<div class="stamp credit"><span class="label">Receitas</span><span class="val mono">'+fmtBRL(tot.receita)+'</span></div>'+
+      '<div class="stamp avulso"><span class="label">Debito</span><span class="val mono">'+fmtBRL(tot.debito)+'</span></div>'+
+      '<div class="stamp debit"><span class="label" style="text-transform:none">'+contaLabel+'</span><span class="val mono">'+fmtBRL(tot.conta)+'</span></div>'+
+      '<div class="stamp '+(tot.saldo>=0?'balance-pos':'balance-neg')+'"><span class="label">Saldo</span><span class="val mono">'+fmtBRL(tot.saldo)+'</span></div>';
+  }
+
+  function renderWalletsRow(){
+    var el = document.getElementById('walletsRow');
+    el.innerHTML = state.accounts.map(function(a){
+      var bal = accountBalance(a.id);
+      return '<div class="wallet-chip"><span class="name">'+a.name+'</span><span class="bal mono'+(bal<0?' neg':'')+'">'+fmtBRL(bal)+'</span></div>';
+    }).join('');
+  }
+
+  function renderCardPanel(){
+    var todayMonth = new Date().toISOString().slice(0,7);
+    var used = state.tx.filter(function(t){ return t.type==='cartao' && counted(t) && monthOf(t.date) >= todayMonth; })
+                        .reduce(function(s,t){ return s+t.amount; }, 0);
+    var paidEarly = state.tx.filter(function(t){ return t.type==='fatura' && counted(t) && (t.invoiceMonth||'') >= todayMonth; })
+                        .reduce(function(s,t){ return s+t.amount; }, 0);
+    used = Math.max(0, used - paidEarly);
+    var limit = state.cardLimit || 0;
+    var avail = limit - used;
+    var pct = limit > 0 ? Math.min(100, (used/limit*100)) : 0;
+    var invoice = monthTotals(state.curMonth).cartao;
+    var fill = document.getElementById('cpBarFill');
+    fill.style.width = pct + '%';
+    fill.className = 'cp-bar-fill' + (limit>0 && used>limit ? ' over' : (pct>=80 ? ' warn' : ''));
+    document.getElementById('cpPct').textContent = limit>0
+      ? (pct.toFixed(1)+'% do limite usado, de '+fmtBRL(limit)+' total')
+      : 'defina o limite total do cartao para acompanhar o uso';
+    document.getElementById('cpUsed').textContent = fmtBRL(used);
+    document.getElementById('cpAvail').textContent = fmtBRL(avail);
+    document.getElementById('cpInvoice').textContent = fmtBRL(invoice);
+
+    var payAcctSel = document.getElementById('cpPayAcct');
+    var payable = state.accounts.filter(function(a){ return a.canPayCard; });
+    if(payable.length === 0){
+      payAcctSel.innerHTML = '<option value="">nenhuma carteira habilitada</option>';
+      document.getElementById('cpPayBtn').disabled = true;
+    } else {
+      payAcctSel.innerHTML = payable.map(function(a){ return '<option value="'+a.id+'">'+a.name+'</option>'; }).join('');
+      document.getElementById('cpPayBtn').disabled = false;
+    }
+    if(!document.getElementById('cpPayAmount').dataset.touched){
+      document.getElementById('cpPayAmount').value = invoice.toFixed(2);
+    }
+  }
+
+  function catOptionsHTML(selected){
+    var html = state.cats.map(function(c){ return '<option value="'+c+'"'+(c===selected?' selected':'')+'>'+c+'</option>'; }).join('');
+    html += '<option value="__new__">+ nova categoria...</option>';
+    return html;
+  }
+  function acctOptionsHTML(selected){
+    var html = state.accounts.map(function(a){ return '<option value="'+a.id+'"'+(a.id===selected?' selected':'')+'>'+a.name+'</option>'; }).join('');
+    html += '<option value="__new__">+ nova carteira...</option>';
+    return html;
+  }
+
+  function renderRail(count){
+    var n = Math.max(3, Math.min(10, count || 3));
+    var el = document.getElementById('rail');
+    var html = '';
+    for(var i=0;i<n;i++) html += '<span></span>';
+    el.innerHTML = html;
+  }
+
+  function renderTable(){
+    var list = monthTx(state.curMonth).slice().sort(function(a,b){ return b.date.localeCompare(a.date); });
+    var body = document.getElementById('txBody');
+    var empty = document.getElementById('emptyState');
+    if(list.length === 0){
+      body.innerHTML = '';
+      empty.hidden = false;
+      renderRail(3);
+      return;
+    }
+    empty.hidden = true;
+    renderRail(list.length);
+    body.innerHTML = list.map(function(t){
+      if(t.id === state.editingId){
+        return '<tr>'+
+          '<td><input class="edit-input" type="date" id="e-date" value="'+t.date+'"></td>'+
+          '<td><input class="edit-input" type="text" id="e-desc" value="'+t.desc.replace(/"/g,'&quot;')+'"></td>'+
+          '<td><select class="edit-input" id="e-cat">'+catOptionsHTML(t.category)+'</select></td>'+
+          '<td><select class="edit-input" id="e-type">'+
+            ['receita','cartao','conta','debito','fatura'].map(function(ty){ return '<option value="'+ty+'"'+(ty===t.type?' selected':'')+'>'+TYPE_LABEL[ty]+'</option>'; }).join('')+
+          '</select></td>'+
+          '<td>'+(t.type==='cartao' ? '<span class="acct-tag">-</span>' : '<select class="edit-input" id="e-acct">'+acctOptionsHTML(t.account)+'</select>')+'</td>'+
+          '<td></td>'+
+          '<td><input class="edit-input" type="number" step="0.01" id="e-amount" value="'+t.amount+'" style="text-align:right"></td>'+
+          '<td class="row-actions"><button data-save="'+t.id+'">salvar</button><button data-cancel="1">cancelar</button></td>'+
+        '</tr>';
+      }
+      var badgeLabel = TYPE_LABEL[t.type];
+      var isPend = t.status === 'pendente';
+      var amtClass = t.type==='receita' ? 'credit' : (isPend ? 'muted' : 'debit');
+      var sign = t.type==='receita' ? '' : '-';
+      var tag = t.installmentInfo ? ' <span class="parcela-tag">('+t.installmentInfo+')</span>' : '';
+      var groupBtn = t.groupId ? '<button data-delgroup="'+t.groupId+'">excluir compra</button>' : '';
+      var statusBadge = '<span class="badge st-'+(isPend?'pendente':'pago')+'">'+(isPend?'Pendente':'Pago')+'</span>';
+      var toggleBtn = t.type !== 'receita' ? '<button class="'+(isPend?'pay':'')+'" data-toggle="'+t.id+'">'+(isPend?'marcar pago':'marcar pendente')+'</button>' : '';
+      var acctCell = t.type==='cartao' ? '<span class="acct-tag">-</span>' : '<span class="acct-tag">'+(acctName(t.account)||'-')+'</span>';
+      return '<tr class="'+(isPend?'pendente':'')+'">'+
+        '<td class="mono">'+t.date.split('-').reverse().join('/')+'</td>'+
+        '<td>'+t.desc+tag+'</td>'+
+        '<td>'+t.category+'</td>'+
+        '<td><span class="badge '+t.type+'">'+badgeLabel+'</span></td>'+
+        '<td>'+acctCell+'</td>'+
+        '<td>'+statusBadge+'</td>'+
+        '<td class="amt '+amtClass+'">'+sign+fmtBRL(t.amount)+'</td>'+
+        '<td class="row-actions">'+toggleBtn+'<button data-edit="'+t.id+'">editar</button><button data-del="'+t.id+'">excluir</button>'+groupBtn+'</td>'+
+      '</tr>';
+    }).join('');
+
+    Array.prototype.forEach.call(body.querySelectorAll('[data-toggle]'), function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-toggle');
+        var tx = state.tx.find(function(t){ return t.id === id; });
+        tx.status = tx.status === 'pendente' ? 'pago' : 'pendente';
+        saveTx(); renderAll();
+      });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-edit]'), function(b){
+      b.addEventListener('click', function(){ state.editingId = b.getAttribute('data-edit'); renderTable(); });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-del]'), function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-del');
+        state.tx = state.tx.filter(function(t){ return t.id !== id; });
+        saveTx(); renderAll();
+      });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-delgroup]'), function(b){
+      b.addEventListener('click', function(){
+        var gid = b.getAttribute('data-delgroup');
+        if(!confirm('Excluir todas as parcelas dessa compra?')) return;
+        state.tx = state.tx.filter(function(t){ return t.groupId !== gid; });
+        saveTx(); renderAll();
+      });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-cancel]'), function(b){
+      b.addEventListener('click', function(){ state.editingId = null; renderTable(); });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-save]'), function(b){
+      b.addEventListener('click', function(){
+        var id = b.getAttribute('data-save');
+        var tx = state.tx.find(function(t){ return t.id === id; });
+        var cat = document.getElementById('e-cat').value;
+        if(cat === '__new__'){
+          var nc = prompt('Nome da nova categoria:');
+          if(nc){ state.cats.push(nc); saveCats(); cat = nc; } else { cat = tx.category; }
+        }
+        tx.date = document.getElementById('e-date').value;
+        tx.desc = document.getElementById('e-desc').value;
+        tx.category = cat;
+        tx.type = document.getElementById('e-type').value;
+        var acctSel = document.getElementById('e-acct');
+        if(acctSel){
+          var av = acctSel.value;
+          if(av === '__new__'){
+            var na = prompt('Nome da nova carteira:');
+            if(na){ var nid=uid(); state.accounts.push({id:nid,name:na,opening:0}); saveAccounts(); av = nid; }
+            else { av = tx.account; }
+          }
+          tx.account = av;
+        }
+        tx.amount = parseFloat(document.getElementById('e-amount').value) || 0;
+        state.editingId = null;
+        saveTx(); renderAll();
+      });
+    });
+  }
+
+  function renderCatBreakdown(){
+    var list = monthTx(state.curMonth).filter(function(t){ return t.type !== 'receita' && t.type !== 'fatura' && counted(t); });
+    var sums = {};
+    list.forEach(function(t){ sums[t.category] = (sums[t.category]||0) + t.amount; });
+    var entries = Object.keys(sums).map(function(k){ return [k, sums[k]]; }).sort(function(a,b){ return b[1]-a[1]; });
+    var el = document.getElementById('catBreakdown');
+    if(entries.length === 0){ el.innerHTML = ''; return; }
+    var max = entries[0][1];
+    el.innerHTML = '<h3>Gastos por categoria no mes (pagos)</h3>' + entries.map(function(e){
+      var pct = max ? (e[1]/max*100) : 0;
+      return '<div class="cat-row"><span>'+e[0]+'</span><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:'+pct+'%"></div></div><span class="cat-val mono">'+fmtBRL(e[1])+'</span></div>';
+    }).join('');
+  }
+
+  function renderOverviewBalance(){
+    var months = allMonthsSorted();
+    var data = months.map(function(m){ return { m:m, saldo: monthTotals(m).saldo }; });
+    var el = document.getElementById('overviewBalance');
+    if(data.every(function(d){ return d.saldo===0; }) && data.length<=1){ el.innerHTML = '<p style="color:var(--ink-soft);font-size:13px">Sem historico suficiente ainda.</p>'; return; }
+    var maxAbs = Math.max.apply(null, data.map(function(d){ return Math.abs(d.saldo); })) || 1;
+    var barW = Math.min(50, (640 / data.length) - 10), gap = 10;
+    var totalW = data.length * (barW+gap);
+    var midY = 100;
+    var scale = 90 / maxAbs;
+    var bars = data.map(function(d, i){
+      var x = i * (barW+gap) + 5;
+      var h = Math.abs(d.saldo) * scale;
+      var y = d.saldo >= 0 ? midY - h : midY;
+      var color = d.saldo >= 0 ? 'var(--credit)' : 'var(--debit)';
+      var mm = d.m.split('-')[1] + '/' + d.m.slice(2,4);
+      return '<g>'+
+        '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+Math.max(h,1)+'" fill="'+color+'" rx="2"></rect>'+
+        '<text x="'+(x+barW/2)+'" y="198" text-anchor="middle" font-size="10" fill="var(--ink-soft)" font-family="IBM Plex Mono, monospace">'+mm+'</text>'+
+      '</g>';
+    }).join('');
+    el.innerHTML = '<svg viewBox="0 0 '+(totalW+10)+' 210" width="100%" height="210" style="max-width:100%">'+
+      '<line x1="0" y1="'+midY+'" x2="'+(totalW+10)+'" y2="'+midY+'" stroke="var(--rule)" stroke-width="1"></line>'+
+      bars + '</svg>';
+  }
+
+  function renderOverviewCats(){
+    var sums = {};
+    state.tx.filter(function(t){ return t.type !== 'receita' && t.type !== 'fatura' && counted(t); }).forEach(function(t){
+      sums[t.category] = (sums[t.category]||0) + t.amount;
+    });
+    var entries = Object.keys(sums).map(function(k){ return [k, sums[k]]; }).sort(function(a,b){ return b[1]-a[1]; }).slice(0,8);
+    var el = document.getElementById('overviewCats');
+    if(entries.length === 0){ el.innerHTML = '<p style="color:var(--ink-soft);font-size:13px">Sem lancamentos ainda.</p>'; return; }
+    var max = entries[0][1];
+    el.innerHTML = entries.map(function(e){
+      var pct = max ? (e[1]/max*100) : 0;
+      return '<div class="cat-row"><span>'+e[0]+'</span><div class="cat-bar-bg"><div class="cat-bar-fill" style="width:'+pct+'%"></div></div><span class="cat-val mono">'+fmtBRL(e[1])+'</span></div>';
+    }).join('');
+  }
+
+  function renderRecTab(){
+    var sel = document.getElementById('r-cat');
+    sel.innerHTML = catOptionsHTML();
+    var body = document.getElementById('recBody');
+    var empty = document.getElementById('recEmpty');
+    if(state.recurring.length === 0){ body.innerHTML = ''; empty.hidden = false; return; }
+    empty.hidden = true;
+    body.innerHTML = state.recurring.map(function(tpl){
+      return '<tr>'+
+        '<td>'+tpl.desc+'</td>'+
+        '<td>'+tpl.category+'</td>'+
+        '<td class="mono">dia '+tpl.day+'</td>'+
+        '<td class="amt debit">'+fmtBRL(tpl.amount)+'</td>'+
+        '<td class="row-actions"><button data-recedit="'+tpl.id+'">editar</button><button data-recdel="'+tpl.id+'">excluir</button></td>'+
+      '</tr>';
+    }).join('');
+    Array.prototype.forEach.call(body.querySelectorAll('[data-recedit]'), function(b){
+      b.addEventListener('click', function(){
+        var tpl = state.recurring.find(function(r){ return r.id === b.getAttribute('data-recedit'); });
+        document.getElementById('r-editid').value = tpl.id;
+        document.getElementById('r-desc').value = tpl.desc;
+        document.getElementById('r-cat').value = tpl.category;
+        document.getElementById('r-amount').value = tpl.amount;
+        document.getElementById('r-day').value = tpl.day;
+        document.getElementById('recSubmitBtn').textContent = 'Salvar alteracao';
+      });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-recdel]'), function(b){
+      b.addEventListener('click', function(){
+        if(!confirm('Excluir esta conta fixa? Lancamentos ja gerados nao serao removidos.')) return;
+        var id = b.getAttribute('data-recdel');
+        state.recurring = state.recurring.filter(function(r){ return r.id !== id; });
+        saveRecurring(); renderRecTab();
+      });
+    });
+  }
+
+  function renderAcctTab(){
+    var body = document.getElementById('acctBody');
+    body.innerHTML = state.accounts.map(function(a){
+      var bal = accountBalance(a.id);
+      return '<tr>'+
+        '<td>'+a.name+'</td>'+
+        '<td class="amt">'+fmtBRL(a.opening||0)+'</td>'+
+        '<td class="amt'+(bal<0?' debit':' credit')+'">'+fmtBRL(bal)+'</td>'+
+        '<td>'+(a.canPayCard ? 'Sim' : 'Não')+'</td>'+
+        '<td class="row-actions"><button data-acedit="'+a.id+'">editar</button><button data-acdel="'+a.id+'">excluir</button></td>'+
+      '</tr>';
+    }).join('');
+    Array.prototype.forEach.call(body.querySelectorAll('[data-acedit]'), function(b){
+      b.addEventListener('click', function(){
+        var a = state.accounts.find(function(x){ return x.id === b.getAttribute('data-acedit'); });
+        document.getElementById('a-editid').value = a.id;
+        document.getElementById('a-name').value = a.name;
+        document.getElementById('a-opening').value = a.opening || 0;
+        document.getElementById('a-canpay').checked = !!a.canPayCard;
+        document.getElementById('acctSubmitBtn').textContent = 'Salvar alteracao';
+      });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-acdel]'), function(b){
+      b.addEventListener('click', function(){
+        if(state.accounts.length <= 1){ alert('Precisa ter ao menos uma carteira.'); return; }
+        if(!confirm('Excluir esta carteira? Lancamentos ja feitos com ela ficam sem carteira.')) return;
+        var id = b.getAttribute('data-acdel');
+        state.accounts = state.accounts.filter(function(a){ return a.id !== id; });
+        saveAccounts(); renderAcctTab(); renderWalletsRow();
+      });
+    });
+  }
+
+  function renderForm(){
+    var sel = document.getElementById('f-cat');
+    sel.innerHTML = catOptionsHTML();
+    var asel = document.getElementById('f-acct');
+    asel.innerHTML = acctOptionsHTML();
+    document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+    toggleParcelasField();
+    toggleAcctField();
+  }
+
+  function toggleParcelasField(){
+    var type = document.getElementById('f-type').value;
+    document.getElementById('parcelasField').style.display = (type === 'cartao') ? 'flex' : 'none';
+    if(type !== 'cartao') document.getElementById('f-parcelas').value = 1;
+  }
+  function toggleAcctField(){
+    var type = document.getElementById('f-type').value;
+    document.getElementById('acctField').style.display = (type === 'cartao') ? 'none' : 'flex';
+  }
+
+  function renderMonthLabel(){
+    document.getElementById('monthLabel').textContent = monthLabel(state.curMonth);
+  }
+
+  function renderTabs(){
+    document.getElementById('tab-mes').hidden = state.tab !== 'mes';
+    document.getElementById('tab-geral').hidden = state.tab !== 'geral';
+    document.getElementById('tab-fixas').hidden = state.tab !== 'fixas';
+    document.getElementById('tab-carteiras').hidden = state.tab !== 'carteiras';
+    document.getElementById('tab-sync').hidden = state.tab !== 'sync';
+    Array.prototype.forEach.call(document.querySelectorAll('.lc-tab'), function(b){
+      b.classList.toggle('active', b.getAttribute('data-tab') === state.tab);
+    });
+  }
+
+  function renderAll(){
+    renderMonthLabel();
+    renderStamps();
+    renderWalletsRow();
+    renderCardPanel();
+    renderTable();
+    renderCatBreakdown();
+    if(state.tab === 'geral'){ renderOverviewBalance(); renderOverviewCats(); }
+    if(state.tab === 'fixas'){ renderRecTab(); }
+    if(state.tab === 'carteiras'){ renderAcctTab(); }
+  }
+  function render(){ renderForm(); renderTabs(); renderAll(); }
+
+  document.getElementById('prevMonth').addEventListener('click', function(){
+    var d = new Date(state.curMonth + '-15');
+    d.setMonth(d.getMonth()-1);
+    state.curMonth = d.toISOString().slice(0,7);
+    ensureRecurringForMonth(state.curMonth);
+    renderAll();
+  });
+  document.getElementById('nextMonth').addEventListener('click', function(){
+    var d = new Date(state.curMonth + '-15');
+    d.setMonth(d.getMonth()+1);
+    state.curMonth = d.toISOString().slice(0,7);
+    ensureRecurringForMonth(state.curMonth);
+    renderAll();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.lc-tab'), function(b){
+    b.addEventListener('click', function(){ state.tab = b.getAttribute('data-tab'); render(); });
+  });
+
+  document.getElementById('f-type').addEventListener('change', function(){ toggleParcelasField(); toggleAcctField(); });
+
+  document.getElementById('syClientForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    sync.clientId = document.getElementById('sy-clientid').value.trim();
+    try{ localStorage.setItem('fin-google-clientid', sync.clientId); }catch(e){}
+    initGoogle();
+    setSyncStatus('client id salvo - clique em Conectar Google');
+  });
+  document.getElementById('syConnectBtn').addEventListener('click', function(){
+    if(!sync.clientId){ alert('Cole o Client ID do Google e clique em Salvar primeiro.'); return; }
+    if(!sync.tokenClient) initGoogle();
+    if(!sync.tokenClient){ alert('A biblioteca do Google ainda nao carregou. Confirme que a pagina esta hospedada em http/https e tente novamente.'); return; }
+    sync.tokenClient.requestAccessToken();
+  });
+  document.getElementById('syNowBtn').addEventListener('click', function(){ pushToSheet(); });
+
+  document.getElementById('cpPayAmount').addEventListener('input', function(){ this.dataset.touched = '1'; });
+  document.getElementById('cpPayBtn').addEventListener('click', function(){
+    var acctId = document.getElementById('cpPayAcct').value;
+    if(!acctId){ alert('Nenhuma carteira habilitada para pagar o cartao. Ajuste isso na aba Carteiras.'); return; }
+    var amount = parseFloat(document.getElementById('cpPayAmount').value) || 0;
+    if(amount <= 0){ alert('Informe um valor valido.'); return; }
+    if(state.cats.indexOf(FATURA_CAT) === -1){ state.cats.push(FATURA_CAT); saveCats(); }
+    var today = new Date().toISOString().slice(0,10);
+    state.tx.push({ id: uid(), date: today, desc: 'Pagamento fatura - '+monthLabel(state.curMonth), category: FATURA_CAT, type: 'fatura', account: acctId, amount: amount, status: 'pago', invoiceMonth: state.curMonth });
+    saveTx();
+    document.getElementById('cpPayAmount').dataset.touched = '';
+    renderAll();
+  });
+
+  document.getElementById('editLimitBtn').addEventListener('click', function(){
+    var v = prompt('Limite total do cartao (R$):', state.cardLimit || '');
+    if(v === null) return;
+    var n = parseFloat(v.replace(',', '.'));
+    if(!isNaN(n)){ state.cardLimit = n; saveLimit(); renderCardPanel(); }
+  });
+
+  document.getElementById('f-cat').addEventListener('change', function(){
+    if(this.value === '__new__'){
+      var nc = prompt('Nome da nova categoria:');
+      if(nc){ state.cats.push(nc); saveCats(); renderForm(); document.getElementById('f-cat').value = nc; }
+      else { this.value = state.cats[0]; }
+    }
+  });
+  document.getElementById('f-acct').addEventListener('change', function(){
+    if(this.value === '__new__'){
+      var na = prompt('Nome da nova carteira:');
+      if(na){ var nid=uid(); state.accounts.push({id:nid,name:na,opening:0}); saveAccounts(); renderForm(); document.getElementById('f-acct').value = nid; }
+      else { this.value = state.accounts[0].id; }
+    }
+  });
+  document.getElementById('r-cat').addEventListener('change', function(){
+    if(this.value === '__new__'){
+      var nc = prompt('Nome da nova categoria:');
+      if(nc){ state.cats.push(nc); saveCats(); var sel=document.getElementById('r-cat'); sel.innerHTML = catOptionsHTML(); sel.value = nc; }
+      else { this.value = state.cats[0]; }
+    }
+  });
+
+  document.getElementById('addForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var cat = document.getElementById('f-cat').value;
+    if(cat === '__new__') return;
+    var type = document.getElementById('f-type').value;
+    var baseDate = document.getElementById('f-date').value;
+    var desc = document.getElementById('f-desc').value;
+    var amount = parseFloat(document.getElementById('f-amount').value) || 0;
+    var acctVal = document.getElementById('f-acct').value;
+    if(acctVal === '__new__') return;
+    var parcelas = type === 'cartao' ? (parseInt(document.getElementById('f-parcelas').value, 10) || 1) : 1;
+
+    if(parcelas > 1){
+      var groupId = uid();
+      var per = Math.round((amount / parcelas) * 100) / 100;
+      var acumulado = 0;
+      for(var i = 0; i < parcelas; i++){
+        var val = (i === parcelas - 1) ? Math.round((amount - acumulado) * 100) / 100 : per;
+        acumulado += val;
+        var d = new Date(baseDate + 'T00:00:00');
+        d.setMonth(d.getMonth() + i);
+        var dstr = d.toISOString().slice(0,10);
+        state.tx.push({ id: uid(), date: dstr, desc: desc, category: cat, type: type, amount: val, status: 'pago', groupId: groupId, installmentInfo: (i+1)+'/'+parcelas });
+      }
+    } else {
+      state.tx.push({ id: uid(), date: baseDate, desc: desc, category: cat, type: type, account: type==='cartao' ? undefined : acctVal, amount: amount, status: 'pago' });
+    }
+    saveTx();
+    document.getElementById('f-desc').value = '';
+    document.getElementById('f-amount').value = '';
+    document.getElementById('f-parcelas').value = 1;
+    state.curMonth = monthOf(baseDate);
+    renderAll();
+  });
+
+  document.getElementById('recForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var cat = document.getElementById('r-cat').value;
+    if(cat === '__new__') return;
+    var editId = document.getElementById('r-editid').value;
+    var desc = document.getElementById('r-desc').value;
+    var amount = parseFloat(document.getElementById('r-amount').value) || 0;
+    var day = Math.max(1, Math.min(31, parseInt(document.getElementById('r-day').value,10) || 1));
+
+    if(editId){
+      var tpl = state.recurring.find(function(r){ return r.id === editId; });
+      tpl.desc = desc; tpl.category = cat; tpl.amount = amount; tpl.day = day;
+      document.getElementById('r-editid').value = '';
+      document.getElementById('recSubmitBtn').textContent = 'Adicionar fixa';
+    } else {
+      state.recurring.push({ id: uid(), desc: desc, category: cat, amount: amount, day: day, account: state.accounts[0].id, startMonth: state.curMonth });
+    }
+    saveRecurring();
+    ensureRecurringForMonth(state.curMonth);
+    document.getElementById('recForm').reset();
+    document.getElementById('r-day').value = 5;
+    renderRecTab();
+    renderAll();
+  });
+
+  document.getElementById('acctForm').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var editId = document.getElementById('a-editid').value;
+    var name = document.getElementById('a-name').value;
+    var opening = parseFloat(document.getElementById('a-opening').value) || 0;
+    var canPay = document.getElementById('a-canpay').checked;
+    if(editId){
+      var a = state.accounts.find(function(x){ return x.id === editId; });
+      a.name = name; a.opening = opening; a.canPayCard = canPay;
+      document.getElementById('a-editid').value = '';
+      document.getElementById('acctSubmitBtn').textContent = 'Adicionar carteira';
+    } else {
+      state.accounts.push({ id: uid(), name: name, opening: opening, canPayCard: canPay });
+    }
+    saveAccounts();
+    document.getElementById('acctForm').reset();
+    document.getElementById('a-canpay').checked = true;
+    renderAcctTab(); renderWalletsRow(); renderForm();
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    var rows = [['data','local','categoria','tipo','carteira','status','valor','parcela']];
+    state.tx.slice().sort(function(a,b){ return a.date.localeCompare(b.date); }).forEach(function(t){
+      rows.push([t.date, t.desc, t.category, t.type, acctName(t.account), t.status||'pago', t.amount.toFixed(2), t.installmentInfo || '']);
+    });
+    var csv = rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+    var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'livro-caixa.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
