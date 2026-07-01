@@ -453,7 +453,8 @@ table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:m
 
   function monthOf(dateStr){ return dateStr.slice(0,7); }
   function monthTx(ym){ return state.tx.filter(function(t){ return monthOf(t.date) === ym; }); }
-  function counted(t){ return t.type !== 'conta' || t.status !== 'pendente'; }
+  function counted(t){ return t.status !== 'pendente'; }
+  function monthCartaoTotal(ym){ return state.tx.filter(function(t){ return t.type==='cartao' && monthOf(t.date)===ym; }).reduce(function(s,t){ return s+t.amount; }, 0); }
   function acctName(id){ var a = state.accounts.find(function(x){ return x.id === id; }); return a ? a.name : ''; }
 
   function ensureRecurringForMonth(ym){
@@ -525,7 +526,7 @@ table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:m
 
   function renderCardPanel(){
     var todayMonth = new Date().toISOString().slice(0,7);
-    var used = state.tx.filter(function(t){ return t.type==='cartao' && counted(t) && monthOf(t.date) >= todayMonth; })
+    var used = state.tx.filter(function(t){ return t.type==='cartao' && monthOf(t.date) >= todayMonth; })
                         .reduce(function(s,t){ return s+t.amount; }, 0);
     var paidEarly = state.tx.filter(function(t){ return t.type==='fatura' && counted(t) && (t.invoiceMonth||'') >= todayMonth; })
                         .reduce(function(s,t){ return s+t.amount; }, 0);
@@ -533,7 +534,7 @@ table.tx td{padding:7px 7px;border-bottom:1px solid var(--rule);vertical-align:m
     var limit = state.cardLimit || 0;
     var avail = limit - used;
     var pct = limit > 0 ? Math.min(100, (used/limit*100)) : 0;
-    var invoice = monthTotals(state.curMonth).cartao;
+    var invoice = monthCartaoTotal(state.curMonth);
     var fill = document.getElementById('cpBarFill');
     fill.style.width = pct + '%';
     fill.className = 'cp-bar-fill' + (limit>0 && used>limit ? ' over' : (pct>=80 ? ' warn' : ''));
